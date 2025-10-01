@@ -137,6 +137,47 @@ void NCO1_SetFrequency_FDC(uint32_t);
     NCO1_SetFrequency_FDC(10000);
 */
 
+int MS = 8;
+
+bool SetSpeed(float vel);
+/**
+  @Summary
+    Converts linear speed to NCO frequency and programs NCO1 in FDC mode.
+
+  @Description
+    This routine computes the required output frequency from a linear velocity
+    using the relation Hz = vel * N * MS / L with constants:
+      - N  = 200
+      - MS = 8
+      - L  = 0.008
+    (This simplifies to Hz = vel * 200000)
+    The computed frequency is validated against the acceptable range used by
+    the driver (200 Hz .. 25000 Hz). If valid, NCO1_SetFrequency_FDC is called
+    to write the increment registers.
+
+  @Preconditions
+    - NCO1_Initialize() must have been called.
+    - NCO1 must be configured in Fixed Duty Cycle (FDC) mode and use a 500 kHz clock.
+
+  @Param
+    vel - Linear speed in meters per second (float).
+
+  @Returns
+    true  - if the calculated frequency is within the acceptable range and was applied.
+    false - if the frequency is out of range and the NCO was not updated.
+
+  @Example
+    <code>
+    // set NCO output for a wheel speed of 0.75 m/s
+    if (SetSpeed(0.75f)) {
+        // success
+    } else {
+        // out of range
+    }
+    </code>
+*/
+
+
 
 
 #ifdef __cplusplus  // Provide C++ Compatibility

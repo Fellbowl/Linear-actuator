@@ -101,6 +101,24 @@ void NCO1_SetFrequency_FDC(uint32_t freq_hz)
     NCO1INCU = (uint8_t)((inc >> 16) & 0x0F);
 }
 
+bool SetSpeed(float vel)
+{
+    bool ok = true;
+    const float N  = 200.0f;
+    const float L  = 0.008f;
+
+    float RPM = vel * 60.0f / (L); // equivalentes a vel * 7500
+    if (RPM < 7.5f) ok = false;
+    if (RPM > 900.0f) ok = false;
+
+    float hz = vel * N * MS / L; // equivalentes a vel * 200000
+
+    if (ok) {
+        NCO1_SetFrequency_FDC((uint32_t)hz);
+    }
+    return ok;
+}
+
 /**
  End of File
 */
