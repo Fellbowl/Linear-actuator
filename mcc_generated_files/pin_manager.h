@@ -65,6 +65,26 @@
 #define PULL_UP_ENABLED      1
 #define PULL_UP_DISABLED     0
 
+// get/set DIR aliases
+#define DIR_TRIS                 TRISAbits.TRISA1
+#define DIR_LAT                  LATAbits.LATA1
+#define DIR_PORT                 PORTAbits.RA1
+#define DIR_WPU                  WPUAbits.WPUA1
+#define DIR_OD                   ODCONAbits.ODCA1
+#define DIR_ANS                  ANSELAbits.ANSA1
+#define DIR_SetHigh()            do { LATAbits.LATA1 = 1; } while(0)
+#define DIR_SetLow()             do { LATAbits.LATA1 = 0; } while(0)
+#define DIR_Toggle()             do { LATAbits.LATA1 = ~LATAbits.LATA1; } while(0)
+#define DIR_GetValue()           PORTAbits.RA1
+#define DIR_SetDigitalInput()    do { TRISAbits.TRISA1 = 1; } while(0)
+#define DIR_SetDigitalOutput()   do { TRISAbits.TRISA1 = 0; } while(0)
+#define DIR_SetPullup()          do { WPUAbits.WPUA1 = 1; } while(0)
+#define DIR_ResetPullup()        do { WPUAbits.WPUA1 = 0; } while(0)
+#define DIR_SetPushPull()        do { ODCONAbits.ODCA1 = 0; } while(0)
+#define DIR_SetOpenDrain()       do { ODCONAbits.ODCA1 = 1; } while(0)
+#define DIR_SetAnalogMode()      do { ANSELAbits.ANSA1 = 1; } while(0)
+#define DIR_SetDigitalMode()     do { ANSELAbits.ANSA1 = 0; } while(0)
+
 // get/set RA2 procedures
 #define RA2_SetHigh()            do { LATAbits.LATA2 = 1; } while(0)
 #define RA2_SetLow()             do { LATAbits.LATA2 = 0; } while(0)

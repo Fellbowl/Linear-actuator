@@ -1,21 +1,21 @@
- /**
-   PWM6 Generated Driver File
+/**
+   NCO1 Generated Driver File
  
    @Company
      Microchip Technology Inc.
  
    @File Name
-     pwm6.c
+     nco1.c
  
    @Summary
-     This is the generated driver implementation file for the PWM6 driver using PIC10 / PIC12 / PIC16 / PIC18 MCUs
+     This is the generated driver implementation file for the NCO1 driver using PIC10 / PIC12 / PIC16 / PIC18 MCUs
  
    @Description
-     This source file provides implementations for driver APIs for PWM6.
+     This source file provides implementations for driver APIs for NCO1.
      Generation Information :
          Product Revision  :  PIC10 / PIC12 / PIC16 / PIC18 MCUs - 1.81.8
          Device            :  PIC16F18426
-         Driver Version    :  2.01
+         Driver Version    :  2.11
      The generated drivers are tested against the following:
          Compiler          :  XC8 2.36 and above or later
          MPLAB             :  MPLAB X 6.00
@@ -48,37 +48,60 @@
    Section: Included Files
  */
 
- #include <xc.h>
- #include "pwm6.h"
+#include <xc.h>
+#include "nco1.h"
 
- /**
-   Section: PWM Module APIs
- */
+/**
+  Section: NCO Module APIs
+*/
 
- void PWM6_Initialize(void)
- {
-    // Set the PWM to the options selected in the PIC10 / PIC12 / PIC16 / PIC18 MCUs.
-    // PWM6POL active_hi; PWM6EN enabled; 
-    PWM6CON = 0x80;   
+void NCO1_Initialize (void)
+{
+    // Set the NCO to the options selected in the GUI
+    // EN disabled; POL active_hi; PFM FDC_mode; 
+    NCO1CON = 0x00;
+    // CKS MFINTOSC_500KHz; PWS 2_clk; 
+    NCO1CLK = 0x23;
+    // 
+    NCO1ACCU = 0x00;
+    // 
+    NCO1ACCH = 0x00;
+    // 
+    NCO1ACCL = 0x00;
+    // 
+    NCO1INCU = 0x01;
+    // 
+    NCO1INCH = 0x89;
+    // 
+    NCO1INCL = 0x37;
 
-    // DC 2; 
-    PWM6DCH = 0x02;   
+    // Enable the NCO module
+    NCO1CONbits.EN = 0;
+   
+    // Clearing IF flag before enabling the interrupt.
+    PIR7bits.NCO1IF = 0;
+    // Enabling NCO1 interrupt.
+    PIE7bits.NCO1IE = 1;
+}
 
-    // DC 1; 
-    PWM6DCL = 0x40;   
+void NCO1_ISR(void)
+{
+    // Clear the NCO1 interrupt flag
+    PIR7bits.NCO1IF = 0;
+}
 
-    // Select timer
-    CCPTMRS1bits.P6TSEL = 1;
- }
+// Asumiendo NCO1CLK = MFINTOSC (500 kHz) y NCO1CON en FDC
+void NCO1_SetFrequency_FDC(uint32_t freq_hz)
+{
+    // usamos 2^21 porque en FDC la salida togglea cada overflow (2 overflows = 1 ciclo)
+    uint32_t inc = (uint32_t)((((uint64_t)freq_hz) << 21) / 500000U);
 
- void PWM6_LoadDutyValue(uint16_t dutyValue)
- {
-     // Writing to 8 MSBs of PWM duty cycle in PWMDCH register
-     PWM6DCH = (dutyValue & 0x03FC)>>2;
-     
-     // Writing to 2 LSBs of PWM duty cycle in PWMDCL register
-     PWM6DCL = (dutyValue & 0x0003)<<6;
- }
- /**
-  End of File
- */
+    NCO1INCL = (uint8_t)(inc & 0xFF);
+    NCO1INCH = (uint8_t)((inc >> 8) & 0xFF);
+    NCO1INCU = (uint8_t)((inc >> 16) & 0x0F);
+}
+
+/**
+ End of File
+*/
+
