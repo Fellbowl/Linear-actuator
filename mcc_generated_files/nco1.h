@@ -127,6 +127,16 @@ void NCO1_Initialize(void);
  */
 bool NCO1_GetOutputStatus(void);
 
+void NCO1_Start(void);
+
+void NCO1_Stop(void);
+
+bool NCO1_GetStatus(void);
+
+void SetFrequency(uint16_t);
+
+void NCO1_RampTick(void);
+
 #ifdef __cplusplus  // Provide C++ Compatibility
 
     }
