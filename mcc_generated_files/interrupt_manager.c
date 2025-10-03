@@ -49,12 +49,18 @@
 #include "interrupt_manager.h"
 #include "mcc.h"
 
+extern bool PulseEnable;
+
 void __interrupt() INTERRUPT_InterruptManager (void)
 {
     // interrupt handler
     if(INTCONbits.PEIE == 1)
     {
-        if(PIE4bits.TMR2IE == 1 && PIR4bits.TMR2IF == 1)
+        if(!MIN_GetValue() && !DIR_GetValue())
+        {
+            PulseEnable = false;
+        }
+        else if(PIE4bits.TMR2IE == 1 && PIR4bits.TMR2IF == 1)
         {
             TMR2_ISR();
         } 

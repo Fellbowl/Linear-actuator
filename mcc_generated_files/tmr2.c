@@ -192,7 +192,7 @@ void TMR2_ISR(void)
             TrueCount--;
         }
     } else{
-        Step_SetLow();
+        STEP_SetLow();
     }
 }
 
