@@ -71,8 +71,8 @@ void TMR1_Initialize(void)
     //GSS T1G_pin; 
     T1GATE = 0x00;
 
-    //CS FOSC; 
-    T1CLK = 0x02;
+    //CS FOSC/4; 
+    T1CLK = 0x01;
 
     //TMR1H 60; 
     TMR1H = 0x3C;
@@ -92,8 +92,8 @@ void TMR1_Initialize(void)
     // Set Default Interrupt Handler
     TMR1_SetInterruptHandler(TMR1_DefaultInterruptHandler);
 
-    // CKPS 1:1; NOT_SYNC synchronize; TMR1ON enabled; T1RD16 disabled; 
-    T1CON = 0x01;
+    // CKPS 1:8; NOT_SYNC synchronize; TMR1ON enabled; T1RD16 disabled; 
+    T1CON = 0x31;
 }
 
 void TMR1_StartTimer(void)

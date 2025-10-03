@@ -50,7 +50,12 @@
 
 #include <xc.h>
 #include "nco1.h"
+#include <stdint.h>
 
+static uint32_t nco_current_inc = 0;
+static uint32_t nco_ramp_target = 0;
+static uint32_t nco_ramp_step = 1000; // Adjust this value to change ramp speed
+static bool nco_ramp_active = false;
 /**
   Section: NCO Module APIs
 */
@@ -58,10 +63,10 @@
 void NCO1_Initialize (void)
 {
     // Set the NCO to the options selected in the GUI
-    // EN disabled; POL active_hi; PFM FDC_mode; 
-    NCO1CON = 0x00;
-    // CKS MFINTOSC_500KHz; PWS 2_clk; 
-    NCO1CLK = 0x23;
+    // EN disabled; POL active_hi; PFM PFM_mode; 
+    NCO1CON = 0x01;
+    // CKS MFINTOSC_500KHz; PWS 1_clk; 
+    NCO1CLK = 0x03;
     // 
     NCO1ACCU = 0x00;
     // 
@@ -69,56 +74,100 @@ void NCO1_Initialize (void)
     // 
     NCO1ACCL = 0x00;
     // 
-    NCO1INCU = 0x01;
+    NCO1INCU = 0x00;
     // 
-    NCO1INCH = 0x89;
+    NCO1INCH = 0xC4;
     // 
-    NCO1INCL = 0x37;
+    NCO1INCL = 0x9C;
+
+    nco_current_inc = ((uint32_t)NCO1INCU << 16) | ((uint32_t)NCO1INCH << 8) | NCO1INCL;
 
     // Enable the NCO module
     NCO1CONbits.EN = 0;
    
-    // Clearing IF flag before enabling the interrupt.
-    PIR7bits.NCO1IF = 0;
-    // Enabling NCO1 interrupt.
-    PIE7bits.NCO1IE = 1;
 }
 
-void NCO1_ISR(void)
+bool NCO1_GetOutputStatus(void)
 {
-    // Clear the NCO1 interrupt flag
-    PIR7bits.NCO1IF = 0;
+    // Return output status on accumulator over flow
+    return (NCO1CONbits.OUT);
 }
 
-// Asumiendo NCO1CLK = MFINTOSC (500 kHz) y NCO1CON en FDC
-void NCO1_SetFrequency_FDC(uint32_t freq_hz)
+void NCO1_Start(void)
 {
-    // usamos 2^21 porque en FDC la salida togglea cada overflow (2 overflows = 1 ciclo)
-    uint32_t inc = (uint32_t)((((uint64_t)freq_hz) << 21) / 500000U);
-
-    NCO1INCL = (uint8_t)(inc & 0xFF);
-    NCO1INCH = (uint8_t)((inc >> 8) & 0xFF);
-    NCO1INCU = (uint8_t)((inc >> 16) & 0x0F);
+    // Start the NCO
+    NCO1CONbits.EN = 1;
 }
 
-bool SetSpeed(float vel)
+void NCO1_Stop(void)
 {
-    bool ok = true;
-    const float N  = 200.0f;
-    const float L  = 0.008f;
+    // Stop the NCO
+    NCO1CONbits.EN = 0;
+}
 
-    float RPM = vel * 60.0f / (L); // equivalentes a vel * 7500
-    if (RPM < 7.5f) ok = false;
-    if (RPM > 900.0f) ok = false;
+bool NCO1_GetStatus(void)
+{
+    // Return the status of the NCO
+    return (NCO1CONbits.EN);
+}
 
-    float hz = vel * N * MS / L; // equivalentes a vel * 200000
+void SetFrequency(uint16_t velocity)
+{
+    uint32_t freq;
+    uint32_t increment;
+    const uint32_t L = 8, N = 200, MS = 8;
 
-    if (ok) {
-        NCO1_SetFrequency_FDC((uint32_t)hz);
+    // Calculate desired frequency in Hz from velocity
+    // frequency = velocity * N * MS / L
+    freq = (uint32_t)(2UL * velocity * N * MS / L);
+
+    // Compute target frequency increment
+    increment = (uint32_t)(((uint64_t)freq << 24) / NCO1_CLK_HZ);
+
+    // Start ramp from 5 kHz up to target (puede ajustarse)
+    uint32_t start_inc = (uint32_t)(((uint64_t)5000 << 24) / NCO1_CLK_HZ);
+    NCO1INCU = (uint8_t)((start_inc >> 16) & 0xFF);
+    NCO1INCH = (uint8_t)((start_inc >> 8) & 0xFF);
+    NCO1INCL = (uint8_t)(start_inc & 0xFF);
+    nco_current_inc = start_inc;
+    // Enable NCO1
+    NCO1CONbits.EN = 1;
+
+    nco_ramp_target = increment;
+    nco_ramp_active = true;
+}
+
+void NCO1_RampTick(void)
+{
+    if(!nco_ramp_active) return;
+
+    if(nco_current_inc == nco_ramp_target) { 
+      nco_ramp_active = false; 
+      return; 
     }
-    return ok;
+    else if(nco_current_inc < nco_ramp_target)
+    {
+        uint32_t next = nco_current_inc + nco_ramp_step;
+        if(next > nco_ramp_target) next = nco_ramp_target;
+        NCO1CONbits.EN = 0;
+        NCO1INCU = (uint8_t)((next >> 16) & 0xFF);
+        NCO1INCH = (uint8_t)((next >> 8) & 0xFF);
+        NCO1INCL = (uint8_t)(next & 0xFF);
+        NCO1CONbits.EN = 1;
+        nco_current_inc = next;
+    }
+    else
+    {
+        uint32_t next = (nco_current_inc > nco_ramp_step) ? nco_current_inc - nco_ramp_step : 0;
+        if(next < nco_ramp_target) next = nco_ramp_target;
+        NCO1CONbits.EN = 0;
+        NCO1INCU = (uint8_t)((next >> 16) & 0xFF);
+        NCO1INCH = (uint8_t)((next >> 8) & 0xFF);
+        NCO1INCL = (uint8_t)(next & 0xFF);
+        NCO1CONbits.EN = 1;
+        nco_current_inc = next;
+    }
 }
-
 /**
  End of File
 */

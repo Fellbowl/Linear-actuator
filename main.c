@@ -43,6 +43,11 @@
 
 #include "mcc_generated_files/mcc.h"
 
+bool PulseEnable = false;
+uint32_t PulseCount = 0;
+int32_t TrueCount = 0;
+uint16_t velocity = 0;
+
 /*
                          Main application
  */
@@ -68,8 +73,31 @@ void main(void)
 
     while (1)
     {
-        // Add your application code
+      SetFrequency(velocity);
+      if(ReturnHome()){
+        NCO1_Stop();
+      }
     }
+}
+
+bool ReturnHome(void){
+    Dir_SetLow();
+    bool ret = false;
+    if(MIN_GetValue()){
+      PulseEnable = false;
+      ret = true;
+    }
+    else{
+      PulseEnable = true;
+      ret = false;
+    }
+    return ret;
+}
+
+\\gives the possition in decimals of mm
+int32_t GetPosition(void){
+    int32_t ret = TrueCount * 80 / (8 * 200);
+    return ret;
 }
 /**
  End of File

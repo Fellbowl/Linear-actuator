@@ -94,91 +94,38 @@ void NCO1_Initialize(void);
 
 /**
   @Summary
-    Implements ISR.
+    Determines if output status is high or low.
 
   @Description
-    This routine is used to implement the ISR for the interrupt-driven
-    implementations.
-
-  @Returns
-    None
-
-  @Param
-    None
-*/
-void NCO1_ISR(void);
-
-void NCO1_SetFrequency_FDC(uint32_t);
-
-/**
-  @Summary
-    Configures the NCO1 output frequency in Fixed Duty Cycle (FDC) mode.
-
-  @Description
-    This routine calculates the increment value (INC) required to generate 
-    the desired output frequency in FDC mode with a 500 kHz NCO clock.
-    It then writes the calculated value into the NCO1INCU:INCH:INCL registers.
-    In FDC mode the NCO toggles the output on every accumulator overflow,
-    therefore the increment is calculated using 2^21 as the divisor.
+    This routine returns the NCO1 output status.
+    high - Indicates output is high
+    low - Indicates output is low
 
   @Preconditions
-    - NCO1 module must be enabled and configured in Fixed Duty Cycle mode.
-    - NCO1 clock source must be set to 500 kHz (e.g., MFINTOSC).
-    - NCO1 output pin must be enabled if the signal is required externally.
+    NCO1_Initialize() function should have been called
+	before calling this function.
 
   @Param
-    freq_hz - Desired output frequency in Hertz (uint32_t).
-
-  @Returns
     None
 
-  @Example
-    // Set NCO1 output to 10 kHz in FDC mode
-    NCO1_SetFrequency_FDC(10000);
-*/
-
-int MS = 8;
-
-bool SetSpeed(float vel);
-/**
-  @Summary
-    Converts linear speed to NCO frequency and programs NCO1 in FDC mode.
-
-  @Description
-    This routine computes the required output frequency from a linear velocity
-    using the relation Hz = vel * N * MS / L with constants:
-      - N  = 200
-      - MS = 8
-      - L  = 0.008
-    (This simplifies to Hz = vel * 200000)
-    The computed frequency is validated against the acceptable range used by
-    the driver (200 Hz .. 25000 Hz). If valid, NCO1_SetFrequency_FDC is called
-    to write the increment registers.
-
-  @Preconditions
-    - NCO1_Initialize() must have been called.
-    - NCO1 must be configured in Fixed Duty Cycle (FDC) mode and use a 500 kHz clock.
-
-  @Param
-    vel - Linear speed in meters per second (float).
-
   @Returns
-    true  - if the calculated frequency is within the acceptable range and was applied.
-    false - if the frequency is out of range and the NCO was not updated.
+    high - Indicates output is high
+    low - Indicates output is low
 
   @Example
     <code>
-    // set NCO output for a wheel speed of 0.75 m/s
-    if (SetSpeed(0.75f)) {
-        // success
-    } else {
-        // out of range
+    NCO1_Initialize();
+    if(NCO1_GetOutputStatus())
+    {
+        // User code..
+    }
+    else
+    {
+         // User code..
     }
     </code>
-*/
-
-
-
+ */
+bool NCO1_GetOutputStatus(void);
 
 #ifdef __cplusplus  // Provide C++ Compatibility
 
